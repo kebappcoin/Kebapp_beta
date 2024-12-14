@@ -96,7 +96,7 @@ export function ReferralSection() {
         <div className="bg-gradient-brand p-8 rounded-xl text-black text-center hover:shadow-gradient transition-all duration-300">
           <h3 className="text-2xl font-bold mb-4">Start Earning Today</h3>
           <p className="mb-6 opacity-80">
-            Share your referral link and earn 2% Kebapp token rewards for every successful purchase
+            Share your referral link and earn 2% Kebapp token rewards and 1% as bonus if referal link is used for every successful purchase
           </p>
           {!walletAddress ? (
             <button 

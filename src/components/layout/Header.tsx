@@ -13,11 +13,11 @@ export function Header() {
           <div className="flex items-center gap-3 group">
             <div className="relative">
               <div className="absolute -inset-2 bg-gradient-brand rounded-full blur-xl opacity-20 group-hover:opacity-30 transition-all duration-300" />
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden">
-                <img 
-                  src="/api/placeholder/48/48"
+              <div className="relative w-15 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden" style={{width: '7rem'}}>
+                <img
+                  src="https://kebapp.club/wp-content/uploads/2024/03/logo-1.png"
                   alt="KebappCoin Logo"
-                  className="w-full h-full object-cover"
+                  className="h-full w-auto object-contain"
                 />
               </div>
             </div>
