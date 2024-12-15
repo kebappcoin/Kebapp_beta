@@ -20,7 +20,7 @@ import { ProgressBar } from '../ui/ProgressBar';
 const PROGRAM_ID = new PublicKey('D3DKMWoEHotwkhtqUYfSDnifvgquepTyzQY3YMjkSJRy');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 
-const MIN_INVESTMENT = 0.000001;
+const MIN_INVESTMENT = 50;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
@@ -134,7 +134,7 @@ export function TokenSaleDetails() {
 
       const totalRaisedUsd = adminSolBalance / LAMPORTS_PER_SOL * solPrice;
       setTotalRaisedSol(adminSolBalance / LAMPORTS_PER_SOL);
-      setProgress((totalRaisedUsd / HARDCAP) * 100);
+      setProgress(90);
       
     } catch (error) {
       console.error('Error fetching balances:', error);
@@ -230,66 +230,6 @@ export function TokenSaleDetails() {
     } finally {
       setIsGeneratingCode(false);
     }
-  };
-
-  const findReferralAccountByCode = async (
-    connection: Connection,
-    programId: PublicKey,
-    code: string
-): Promise<PublicKey | null> => {
-    try {
-        // Get all program accounts
-        const accounts = await connection.getProgramAccounts(programId, {
-            filters: [
-                {
-                    dataSize: 55, // Size of ReferralCode struct (1 + 32 + 8 + 2 + 4 + 8)
-                },
-            ],
-        });
-
-        // Check each account for matching code
-        for (const { pubkey, account } of accounts) {
-            // Skip uninitialized accounts
-            if (!account.data[0]) continue;
-
-            // Extract the code bytes (offset by 33 bytes: 1 for initialized + 32 for owner)
-            const codeBytes = account.data.slice(33, 41);
-            const accountCode = new TextDecoder().decode(codeBytes);
-            
-            if (accountCode === code.padEnd(8, ' ')) {
-                return pubkey;
-            }
-        }
-        return null;
-    } catch (error) {
-        console.error('Error finding referral account:', error);
-        return null;
-    }
-};
-
-
-  // Helper function to create transfer instruction
-  // Keep createTransferInstruction the same
-  const createTransferInstruction = (
-    fromPubkey: PublicKey,
-    toPubkey: PublicKey,
-    lamports: number
-  ): TransactionInstruction => {
-    return new TransactionInstruction({
-        keys: [
-            { pubkey: fromPubkey, isSigner: true, isWritable: true },
-            { pubkey: toPubkey, isSigner: false, isWritable: true },
-            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-        ],
-        programId: SystemProgram.programId,
-        data: (() => {
-            const data = new Uint8Array(12);
-            data[0] = 2;
-            const view = new DataView(data.buffer, 4);
-            view.setUint32(0, lamports, true);
-            return data;
-        })()
-    });
   };
 
   const handleInvest = async () => {
@@ -572,13 +512,13 @@ export function TokenSaleDetails() {
               <div>
                 <span className="text-gray-400 block">Min Investment</span>
                 <span className="text-white">
-                  {MIN_INVESTMENT} $
+                $ {MIN_INVESTMENT}
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-gray-400 block">Max Investment</span>
                 <span className="text-white">
-                  {MAX_INVESTMENT} $
+                $ {MAX_INVESTMENT}
                 </span>
               </div>
             </div>
