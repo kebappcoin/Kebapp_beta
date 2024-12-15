@@ -20,7 +20,7 @@ import { ProgressBar } from '../ui/ProgressBar';
 const PROGRAM_ID = new PublicKey('D3DKMWoEHotwkhtqUYfSDnifvgquepTyzQY3YMjkSJRy');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 
-const MIN_INVESTMENT = 0.00000001;
+const MIN_INVESTMENT = 0.000001;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
@@ -150,27 +150,6 @@ export function TokenSaleDetails() {
     }
   }, [currentPhantomKey, fetchBalances]);
 
-  const createInstructionData = (amount: number): Uint8Array => {
-    // 1 byte for instruction + 8 bytes for amount + 8 bytes for optional referral code
-    const dataLength = referralInput ? 17 : 9;
-    const data = new Uint8Array(dataLength);
-    data[0] = selectedToken.instructionIndex;
-    
-    const value = Math.floor(amount * selectedToken.decimals);
-    const buffer = new ArrayBuffer(8);
-    const view = new DataView(buffer);
-    view.setBigUint64(0, BigInt(value), true);
-    data.set(new Uint8Array(buffer), 1);
-    
-    // Add referral code if provided
-    if (referralInput) {
-      const referralBuffer = Buffer.from(referralInput.padEnd(8));
-      data.set(new Uint8Array(referralBuffer), 9);
-    }
-    
-    return data;
-  };
-
   const validateAmount = (value: string): boolean => {
     if (isPresaleEnded) {
       setError('Presale has ended');
@@ -253,69 +232,162 @@ export function TokenSaleDetails() {
     }
   };
 
+  const findReferralAccountByCode = async (
+    connection: Connection,
+    programId: PublicKey,
+    code: string
+): Promise<PublicKey | null> => {
+    try {
+        // Get all program accounts
+        const accounts = await connection.getProgramAccounts(programId, {
+            filters: [
+                {
+                    dataSize: 55, // Size of ReferralCode struct (1 + 32 + 8 + 2 + 4 + 8)
+                },
+            ],
+        });
+
+        // Check each account for matching code
+        for (const { pubkey, account } of accounts) {
+            // Skip uninitialized accounts
+            if (!account.data[0]) continue;
+
+            // Extract the code bytes (offset by 33 bytes: 1 for initialized + 32 for owner)
+            const codeBytes = account.data.slice(33, 41);
+            const accountCode = new TextDecoder().decode(codeBytes);
+            
+            if (accountCode === code.padEnd(8, ' ')) {
+                return pubkey;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error finding referral account:', error);
+        return null;
+    }
+};
+
+
+  // Helper function to create transfer instruction
+  // Keep createTransferInstruction the same
+  const createTransferInstruction = (
+    fromPubkey: PublicKey,
+    toPubkey: PublicKey,
+    lamports: number
+  ): TransactionInstruction => {
+    return new TransactionInstruction({
+        keys: [
+            { pubkey: fromPubkey, isSigner: true, isWritable: true },
+            { pubkey: toPubkey, isSigner: false, isWritable: true },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: SystemProgram.programId,
+        data: (() => {
+            const data = new Uint8Array(12);
+            data[0] = 2;
+            const view = new DataView(data.buffer, 4);
+            view.setUint32(0, lamports, true);
+            return data;
+        })()
+    });
+  };
+
   const handleInvest = async () => {
     if (!walletAddress) {
       addNotification('warning', 'Please connect your wallet');
       return;
     }
-
-    if (!validateAmount(amount)) {
+  
+   /* if (!validateAmount(amount)) {
       addNotification('error', error);
       return;
-    }
-
+    } */
+  
     setIsProcessing(true);
     try {
       const connection = getConnection();
-      const rawAmount = Number(amount);
-      const instructionData = createInstructionData(rawAmount);
-      const { blockhash } = await connection.getLatestBlockhash('confirmed');
-
-      const transaction = new Transaction();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new PublicKey(walletAddress);
-
-      // Create instruction with optional referral account
-      const keys = [
-        { pubkey: new PublicKey(walletAddress), isSigner: true, isWritable: true },
-        { pubkey: ADMIN_WALLET, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
-      ];
-
-      // Add referral account if code is provided
+      const userPubkey = new PublicKey(walletAddress);
+      const lamports = Number(amount) * selectedToken.decimals;
+  
+      // Create instruction data
+      const data = new Uint8Array(referralInput ? 17 : 9);
+      data[0] = selectedToken.instructionIndex;
+      const view = new DataView(data.buffer);
+      view.setBigUint64(1, BigInt(lamports), true);
+      
       if (referralInput) {
-        const [referralAccount] = PublicKey.findProgramAddressSync(
-          [Buffer.from("referral"), new PublicKey(walletAddress).toBuffer()],
-          PROGRAM_ID
-        );
-        keys.push({ pubkey: referralAccount, isSigner: false, isWritable: true });
+        const encoder = new TextEncoder();
+        const referralBytes = encoder.encode(referralInput.padEnd(8));
+        data.set(referralBytes, 9);
       }
+  
+      // Get latest blockhash
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  
+      // Create transaction
+      const transaction = new Transaction({
+        feePayer: userPubkey,
+        blockhash,
+        lastValidBlockHeight,
+      });
+      //const systemProgramId = new PublicKey('11111111111111111111111111111111');
 
+      // Set up account keys
+      const baseAccounts = [
+        { pubkey: userPubkey, isSigner: true, isWritable: true },
+        { pubkey: ADMIN_WALLET, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ];
+  
+      const keys = [...baseAccounts];
+      if (referralInput) {
+        const seed = new TextEncoder().encode("referral");
+        const [referralAccount] = PublicKey.findProgramAddressSync(
+            [seed, userPubkey.toBytes()],
+            PROGRAM_ID
+        );
+        
+        keys.splice(2, 0, { pubkey: referralAccount, isSigner: false, isWritable: true });
+      }
+  
+      // Add owner account for USDT investments
+      if (selectedToken.symbol === 'USDT') {
+        keys.push({ pubkey: userPubkey, isSigner: true, isWritable: true });
+      }
+  
+      // Create program instruction
       const instruction = new TransactionInstruction({
         keys,
         programId: PROGRAM_ID,
-        data: instructionData
+        data
       });
-
+  
       transaction.add(instruction);
-
+  
+      // Sign and send transaction
       const signed = await window.solana.signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signed.serialize());
-      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-
+      
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      });
+  
       if (confirmation.value.err) {
         throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
       }
-
+  
       addNotification('success', 'Investment successful!');
-      addDeposit(rawAmount);
+      addDeposit(Number(amount));
       setAmount('');
       await fetchBalances();
-
+  
     } catch (error) {
       console.error('Investment failed:', error);
       if (error instanceof SendTransactionError) {
-        addNotification('error', `Transaction failed: ${error.message}`);
+        const logs = error.logs ? error.logs.join('\n') : error.message;
+        addNotification('error', `Transaction failed: ${logs}`);
       } else {
         addNotification('error', error instanceof Error ? error.message : 'Investment failed');
       }
@@ -500,13 +572,13 @@ export function TokenSaleDetails() {
               <div>
                 <span className="text-gray-400 block">Min Investment</span>
                 <span className="text-white">
-                  {MIN_INVESTMENT} {selectedToken.symbol}
+                  {MIN_INVESTMENT} $
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-gray-400 block">Max Investment</span>
                 <span className="text-white">
-                  {MAX_INVESTMENT} {selectedToken.symbol}
+                  {MAX_INVESTMENT} $
                 </span>
               </div>
             </div>
