@@ -35,7 +35,7 @@ export function ReferralSection() {
           <p className="text-gray-400">Share KebappCoin with your friends and earn rewards</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-3 mb-6">
               <Gift className="w-6 h-6 text-brand-yellow animate-pulse-slow" />
@@ -48,50 +48,7 @@ export function ReferralSection() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-6">
-              <Link className="w-6 h-6 text-brand-blue animate-pulse-slow" />
-              <h3 className="text-xl font-bold text-white">Your Referral Link</h3>
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                readOnly
-                value={referralLink}
-                className={`w-full bg-[#12131a] border border-brand-blue/20 rounded-lg px-4 py-3 pr-32 text-gray-300 hover:border-brand-blue/40 transition-colors ${!referralCode ? 'text-gray-500' : ''}`}
-              />
-              {referralCode ? (
-                <button 
-                  onClick={handleCopy}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-brand text-black px-4 py-1.5 rounded-md transition-all duration-300 hover:shadow-gradient flex items-center gap-2 font-medium"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    'Copy'
-                  )}
-                </button>
-              ) : (
-                <button 
-                  onClick={connectWallet}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-brand text-black px-4 py-1.5 rounded-md transition-all duration-300 hover:shadow-gradient flex items-center gap-2 font-medium"
-                >
-                  <Wallet className="w-4 h-4" />
-                  <span>Connect</span>
-                </button>
-              )}
-            </div>
-            <div className="mt-4 text-sm text-gray-400">
-              {walletAddress ? (
-                'Share your unique referral link with friends to start earning rewards'
-              ) : (
-                'Connect your wallet to get your unique referral link'
-              )}
-            </div>
-          </div>
+         
         </div>
 
         <div className="bg-gradient-brand p-8 rounded-xl text-black text-center hover:shadow-gradient transition-all duration-300">
