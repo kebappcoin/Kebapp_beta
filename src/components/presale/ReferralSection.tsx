@@ -23,6 +23,7 @@ export function ReferralSection() {
     addNotification('success', 'Referral link copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
+  
 
   return (
     <Card className="max-w-5xl mx-auto animate-slide-up" style={{ animationDelay: '0.4s' }}>
