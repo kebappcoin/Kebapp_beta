@@ -298,10 +298,10 @@ export function TokenSaleDetails() {
       return;
     }
   
-   /* if (!validateAmount(amount)) {
+   if (!validateAmount(amount)) {
       addNotification('error', error);
       return;
-    } */
+    }
   
     setIsProcessing(true);
     try {
