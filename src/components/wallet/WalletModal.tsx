@@ -1,34 +1,7 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Modal } from '../ui/Modal';
-import { QrCode } from 'lucide-react';
-
-interface WalletOption {
-  id: string;
-  name: string;
-  icon: string;
-  action?: 'qr' | 'connect';
-}
-
-const walletOptions: WalletOption[] = [
-  {
-    id: 'walletconnect',
-    name: 'WalletConnect',
-    icon: 'https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg',
-    action: 'qr'
-  },
-  {
-    id: 'metamask',
-    name: 'MetaMask',
-    icon: 'https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/metamask-fox.svg',
-    action: 'connect'
-  },
-  {
-    id: 'phantom',
-    name: 'Phantom',
-    icon: 'https://raw.githubusercontent.com/phantom-labs/press-kit/main/phantom-logo.svg',
-    action: 'connect'
-  }
-];
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletReadyState } from '@solana/wallet-adapter-base';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -37,62 +10,72 @@ interface WalletModalProps {
 }
 
 export function WalletModal({ isOpen, onClose, onConnect }: WalletModalProps) {
-  const handleWalletClick = (wallet: WalletOption) => {
+  const { select, wallets, connecting } = useWallet();
+
+  // Filter and sort wallets based on ready state
+  const availableWallets = useMemo(() => {
+    const installed = wallets.filter(wallet => 
+      wallet.readyState === WalletReadyState.Installed
+    );
+    const loadable = wallets.filter(wallet => 
+      wallet.readyState === WalletReadyState.Loadable
+    );
+    
+    return [...installed, ...loadable];
+  }, [wallets]);
+
+  // Handle wallet selection
+  const handleWalletClick = useCallback(async (walletName: string) => {
+    select(walletName);
     onConnect();
     onClose();
-  };
+  }, [select, onConnect, onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Connect Wallet">
       <div className="space-y-4">
-        {walletOptions.map((wallet) => (
+        {availableWallets.map((wallet) => (
           <button
-            key={wallet.id}
-            onClick={() => handleWalletClick(wallet)}
-            className="w-full flex items-center justify-between p-4 rounded-xl bg-[#12131a] hover:bg-gradient-brand group transition-all duration-300 border border-brand-blue/10"
+            key={wallet.adapter.name}
+            onClick={() => handleWalletClick(wallet.adapter.name)}
+            disabled={connecting}
+            className="w-full flex items-center justify-between p-4 rounded-xl bg-[#12131a] hover:bg-gradient-brand group transition-all duration-300 border border-brand-blue/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white p-2 flex items-center justify-center group-hover:bg-black/10">
-                <img 
-                  src={wallet.icon} 
-                  alt={wallet.name} 
-                  className="w-full h-full object-contain"
-                />
+                {wallet.adapter.icon && (
+                  <img 
+                    src={wallet.adapter.icon}
+                    alt={wallet.adapter.name}
+                    className="w-full h-full object-contain"
+                  />
+                )}
               </div>
-              <span className="text-lg font-medium text-white group-hover:text-black transition-colors">
-                {wallet.name}
-              </span>
+              <div className="flex flex-col items-start">
+                <span className="text-lg font-medium text-white group-hover:text-black transition-colors">
+                  {wallet.adapter.name}
+                </span>
+                {wallet.readyState === WalletReadyState.Loadable && (
+                  <span className="text-sm text-gray-400">
+                    Not installed
+                  </span>
+                )}
+              </div>
             </div>
-            {wallet.action === 'qr' && (
-              <div className="px-3 py-1 rounded-md bg-white/10 text-white group-hover:bg-black/10 group-hover:text-black text-sm font-medium flex items-center gap-1 transition-colors">
-                <QrCode className="w-4 h-4" />
-                QR CODE
+
+            {connecting && (
+              <div className="px-3 py-1 rounded-md bg-white/10 text-white text-sm font-medium">
+                Connecting...
               </div>
             )}
           </button>
         ))}
 
-        <button
-          onClick={onClose}
-          className="w-full flex items-center justify-between p-4 rounded-xl bg-[#12131a] hover:bg-gradient-brand group transition-all duration-300 border border-brand-blue/10"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/5 p-2 flex items-center justify-center group-hover:bg-black/10">
-              <div className="w-6 h-6 grid grid-cols-2 gap-1">
-                <div className="bg-white/30 rounded-sm group-hover:bg-black/30"></div>
-                <div className="bg-white/30 rounded-sm group-hover:bg-black/30"></div>
-                <div className="bg-white/30 rounded-sm group-hover:bg-black/30"></div>
-                <div className="bg-white/30 rounded-sm group-hover:bg-black/30"></div>
-              </div>
-            </div>
-            <span className="text-lg font-medium text-white group-hover:text-black transition-colors">
-              All Wallets
-            </span>
+        {availableWallets.length === 0 && (
+          <div className="text-center text-gray-400 py-4">
+            No compatible wallets found. Please install a Solana wallet.
           </div>
-          <div className="px-3 py-1 rounded-md bg-white/10 text-white group-hover:bg-black/10 group-hover:text-black text-sm font-medium transition-colors">
-            4
-          </div>
-        </button>
+        )}
       </div>
     </Modal>
   );

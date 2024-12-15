@@ -11,6 +11,11 @@ import { WalletModal } from './components/wallet/WalletModal';
 import { useUser } from './context/UserContext';
 import { usePresale } from './context/PresaleContext';
 import { Rocket } from 'lucide-react';
+import { WalletProvider, ConnectionProvider } from '@solana/wallet-adapter-react';
+import { PhantomWalletAdapter, SolflareWalletAdapter, AlphaWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import { useMemo } from 'react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 function AppContent() {
   const { isPresaleEnded } = usePresale();
@@ -89,14 +94,29 @@ function AppContent() {
 }
 
 function App() {
+  const network = WalletAdapterNetwork.Mainnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new AlphaWalletAdapter(),
+    ],
+    [network]
+  );
   return (
-    <NotificationProvider>
-      <UserProvider>
-        <PresaleProvider>
-          <AppContent />
-        </PresaleProvider>
-      </UserProvider>
-    </NotificationProvider>
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <NotificationProvider>
+          <UserProvider>
+            <PresaleProvider>
+              <AppContent />
+            </PresaleProvider>
+          </UserProvider>
+        </NotificationProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }
 

@@ -1,8 +1,8 @@
-// components/wallet/ConnectWalletButton.tsx
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Wallet, Copy, User, LogOut, ChevronDown } from 'lucide-react';
-import { useUser } from '../../context/UserContext';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { WalletModal } from './WalletModal';
 
 interface ConnectWalletButtonProps {
   className?: string;
@@ -10,27 +10,89 @@ interface ConnectWalletButtonProps {
 }
 
 export function ConnectWalletButton({ className = '', variant = 'default' }: ConnectWalletButtonProps) {
-  const { walletAddress, isLoading, connectWallet, disconnectWallet } = useUser();
+  const { 
+    publicKey, 
+    disconnect, 
+    connected, 
+    wallet,
+    connecting,
+    disconnecting,
+    select 
+  } = useWallet();
+  const { connection } = useConnection();
   const { addNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const truncateAddress = (address: string) => {
+  // Update current address when publicKey changes
+  useEffect(() => {
+    if (publicKey) {
+      setCurrentAddress(publicKey.toString());
+    } else {
+      setCurrentAddress(null);
+    }
+  }, [publicKey]);
+
+  // Listen for wallet changes from extension
+  useEffect(() => {
+    if (!connection || !wallet) return;
+
+    const handleAccountChange = () => {
+      // Force refresh wallet state
+      disconnect().then(() => {
+        if (wallet) {
+          select(wallet.adapter.name);
+        }
+      });
+    };
+
+    // Setup listeners for Phantom wallet
+    if ((window as any).solana) {
+      (window as any).solana.on('accountChanged', handleAccountChange);
+    }
+
+    return () => {
+      if ((window as any).solana) {
+        (window as any).solana.removeListener('accountChanged', handleAccountChange);
+      }
+    };
+  }, [connection, wallet, select, disconnect]);
+
+  // Monitor wallet connection state changes
+  useEffect(() => {
+    if (connecting) {
+      setShowWalletModal(false);
+    }
+  }, [connecting]);
+
+  const truncateAddress = useCallback((address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
+  }, []);
 
   const copyAddress = async () => {
-    if (walletAddress) {
-      await navigator.clipboard.writeText(walletAddress);
+    if (currentAddress) {
+      await navigator.clipboard.writeText(currentAddress);
       addNotification('success', 'Address copied to clipboard!');
       setIsDropdownOpen(false);
     }
   };
 
-  const handleDisconnect = () => {
-    disconnectWallet();
-    setIsDropdownOpen(false);
-    addNotification('info', 'Wallet disconnected');
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      setIsDropdownOpen(false);
+      setCurrentAddress(null);
+      addNotification('info', 'Wallet disconnected');
+    } catch (error) {
+      console.error('Disconnect error:', error);
+      addNotification('error', 'Failed to disconnect wallet');
+    }
+  };
+
+  const handleConnectWallet = () => {
+    setShowWalletModal(true);
   };
 
   // Close dropdown when clicking outside
@@ -45,16 +107,26 @@ export function ConnectWalletButton({ className = '', variant = 'default' }: Con
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!walletAddress) {
+  if (!connected || !currentAddress) {
     return (
-      <button 
-        onClick={connectWallet}
-        disabled={isLoading}
-        className={`flex items-center gap-2 bg-gradient-brand text-black px-6 py-2.5 rounded-lg hover:shadow-gradient transition-all duration-300 font-semibold disabled:opacity-50 ${className}`}
-      >
-        <Wallet className="w-5 h-5" />
-        {isLoading ? 'Connecting...' : 'Connect Wallet'}
-      </button>
+      <>
+        <button 
+          onClick={handleConnectWallet}
+          disabled={connecting || disconnecting}
+          className={`flex items-center gap-2 bg-gradient-brand text-black px-6 py-2.5 rounded-lg hover:shadow-gradient transition-all duration-300 font-semibold disabled:opacity-50 ${className}`}
+        >
+          <Wallet className="w-5 h-5" />
+          {connecting ? 'Connecting...' : 'Connect Wallet'}
+        </button>
+
+        <WalletModal 
+          isOpen={showWalletModal} 
+          onClose={() => setShowWalletModal(false)}
+          onConnect={() => {
+            setShowWalletModal(false);
+          }}
+        />
+      </>
     );
   }
 
@@ -65,12 +137,12 @@ export function ConnectWalletButton({ className = '', variant = 'default' }: Con
         className={`flex items-center gap-2 bg-gradient-brand text-black px-6 py-2.5 rounded-lg hover:shadow-gradient transition-all duration-300 font-semibold ${className}`}
       >
         <Wallet className="w-5 h-5" />
-        <span>{truncateAddress(walletAddress)}</span>
+        <span>{truncateAddress(currentAddress)}</span>
         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isDropdownOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-[#1a1b1e] border border-brand-blue/10 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute right-0 mt-2 w-48 bg-[#1a1b1e] border border-brand-blue/10 rounded-lg shadow-lg overflow-hidden z-50">
           <div className="py-1">
             <button
               onClick={copyAddress}
@@ -83,7 +155,6 @@ export function ConnectWalletButton({ className = '', variant = 'default' }: Con
             <button
               onClick={() => {
                 setIsDropdownOpen(false);
-                // Add profile action here
               }}
               className="flex items-center gap-3 w-full px-4 py-2 text-sm text-white hover:bg-brand-blue/10 transition-colors duration-200"
             >
