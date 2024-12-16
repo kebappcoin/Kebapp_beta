@@ -16,7 +16,7 @@ interface UserContextType {
   getConnection: () => Connection;
 }
 
-const NETWORK = 'devnet';
+const NETWORK = 'mainnet-beta';
 const COMMITMENT = 'processed';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
