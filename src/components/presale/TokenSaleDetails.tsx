@@ -17,31 +17,34 @@ import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { TgeTrigger } from './TgeTrigger';
 import { WalletModal } from '../wallet/WalletModal';
+const USDT_MINT = new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB');
 
 // Constants
 //Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
 //Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
 const PROGRAM_ID = new PublicKey('E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
-const NETWORK = 'mainnet-beta';
+const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
-const MIN_INVESTMENT = 0.00000001;
+const MIN_INVESTMENT = 50;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
 const TOKENS = [
   {
-    symbol: 'SOL',
-    icon: "./images/sol.png",
-    decimals: LAMPORTS_PER_SOL,
-    instructionIndex: 0
-  },
-  {
     symbol: 'USDT',
     icon: './images/usdt.png',
     decimals: 1000000,
-    instructionIndex: 1
+    instructionIndex: 1,
+    currency : '$'
+  },
+  {
+    symbol: 'SOL',
+    icon: "./images/sol.png",
+    decimals: LAMPORTS_PER_SOL,
+    instructionIndex: 0,
+    currency : 'SOL'
   }
 ];
 
@@ -76,7 +79,7 @@ export function TokenSaleDetails() {
 
   const getConnection = useCallback(() => {
     return new Connection(
-      `https://api.${NETWORK}.solana.com`,
+      `https://mainnet.helius-rpc.com/?api-key=a1d5b3f4-f7c0-499a-b729-6f7ef05cacaa`,
       { commitment: COMMITMENT }
     );
   }, []);
@@ -106,7 +109,15 @@ export function TokenSaleDetails() {
       try {
         const connection = getConnection();
         const solBalance = await connection.getBalance(publicKey);
-        setBalances(prev => ({ ...prev, sol: solBalance / LAMPORTS_PER_SOL }));
+        const response = await connection.getParsedTokenAccountsByOwner(
+          publicKey,
+          { mint: USDT_MINT }
+        );
+      
+        // Get USDT balance, defaulting to 0 if not found
+        const usdtBalance = response.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0;
+
+        setBalances(prev => ({ ...prev, sol: solBalance / LAMPORTS_PER_SOL, usdt: usdtBalance }));
 
         const adminSolBalance = await connection.getBalance(ADMIN_WALLET);
         const totalRaisedUsd = (adminSolBalance / LAMPORTS_PER_SOL) * solPrice;
@@ -120,7 +131,7 @@ export function TokenSaleDetails() {
 
     if (connected) {
       fetchBalances();
-      const interval = setInterval(fetchBalances, 10000);
+      const interval = setInterval(fetchBalances, 6000000);
       return () => clearInterval(interval);
     }
   }, [publicKey, connected, getConnection, addNotification, solPrice]);
@@ -337,7 +348,6 @@ export function TokenSaleDetails() {
                 Fundraising Progress
               </span>
             </h3>
-            
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Total Raised</span>
@@ -394,7 +404,6 @@ export function TokenSaleDetails() {
                 </span>
               </div>
             </div>
-
             <TokenInput
               value={amount}
               onChange={setAmount}
@@ -423,13 +432,13 @@ export function TokenSaleDetails() {
               <div>
                 <span className="text-gray-400 block">Min Investment</span>
                 <span className="text-white">
-                  ${MIN_INVESTMENT.toLocaleString()}
+                {selectedToken.currency} {MIN_INVESTMENT.toLocaleString()}
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-gray-400 block">Max Investment</span>
                 <span className="text-white">
-                  ${MAX_INVESTMENT.toLocaleString()}
+                {selectedToken.currency} {MAX_INVESTMENT.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -458,7 +467,7 @@ export function TokenSaleDetails() {
                   {referralCode}
                 </p>
                 <p className="text-sm text-gray-400">
-                  Share your code and earn 2% rewards on referral investments
+                  Share your referral link and earn 2% Kebapp token rewards and 1% as bonus if referal link is used for every successful purchase
                 </p>
               </div>
             ) : (

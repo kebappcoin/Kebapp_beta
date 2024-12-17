@@ -43,7 +43,10 @@ export function TokenInput({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm text-gray-400 font-medium">{label}</label>
+      <div className="flex justify-between mb-2">
+          <label className="block text-sm text-gray-400 font-medium">{label}</label>
+          <span className="bg-gradient-brand bg-clip-text text-transparent text-center">KEBAB TOKEN PRICE: $0.02</span>
+      </div>
       <div className="relative group">
         <div className={`
           absolute -inset-0.5 bg-brand-blue/10 rounded-lg opacity-0 

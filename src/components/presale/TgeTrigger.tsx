@@ -16,7 +16,7 @@ const PROGRAM_ID = new PublicKey('E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn')
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 const KEBAB_TOKEN_MINT = new PublicKey('5fEEqD2GxnJ64cMoZGxKTd9ypiU2oc8CTSRyRxFRhNZP');
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const NETWORK = 'mainnet-beta';
+const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
 export const TgeTrigger = () => {
@@ -27,7 +27,7 @@ export const TgeTrigger = () => {
 
   const getConnection = () => {
     return new Connection(
-      `https://api.${NETWORK}.solana.com`,
+      `https://mainnet.helius-rpc.com/?api-key=a1d5b3f4-f7c0-499a-b729-6f7ef05cacaa`,
       { commitment: COMMITMENT }
     );
   };
