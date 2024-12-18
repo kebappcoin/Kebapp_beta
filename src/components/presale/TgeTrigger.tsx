@@ -12,7 +12,7 @@ import {
 //Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
 //Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
 
-const PROGRAM_ID = new PublicKey('E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn');
+const PROGRAM_ID = new PublicKey('6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 const KEBAB_TOKEN_MINT = new PublicKey('5fEEqD2GxnJ64cMoZGxKTd9ypiU2oc8CTSRyRxFRhNZP');
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');

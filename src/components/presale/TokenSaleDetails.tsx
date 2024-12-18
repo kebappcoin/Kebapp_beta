@@ -18,16 +18,17 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { TgeTrigger } from './TgeTrigger';
 import { WalletModal } from '../wallet/WalletModal';
 const USDT_MINT = new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB');
+const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
 // Constants
 //Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
 //Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
-const PROGRAM_ID = new PublicKey('E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn');
+const PROGRAM_ID = new PublicKey('6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
-const MIN_INVESTMENT = 50;
+const MIN_INVESTMENT = 0;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
@@ -203,6 +204,7 @@ export function TokenSaleDetails() {
       const connection = getConnection();
       const lamports = Number(amount) * selectedToken.decimals;
 
+      // Create instruction data
       const data = new Uint8Array(referralInput ? 17 : 9);
       data[0] = selectedToken.instructionIndex;
       const view = new DataView(data.buffer);
@@ -221,12 +223,42 @@ export function TokenSaleDetails() {
         lastValidBlockHeight,
       });
 
-      const baseAccounts = [
-        { pubkey: publicKey, isSigner: true, isWritable: true },
-        { pubkey: ADMIN_WALLET, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ];
+      let baseAccounts;
+      
+      if (selectedToken.symbol === 'SOL') {
+        baseAccounts = [
+          { pubkey: publicKey, isSigner: true, isWritable: true },
+          { pubkey: ADMIN_WALLET, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ];
+      } else {
+        // USDT transfer accounts
+        const userAccounts = await connection.getParsedTokenAccountsByOwner(
+          publicKey,
+          { mint: USDT_MINT }
+        );
+        
+        const adminAccounts = await connection.getParsedTokenAccountsByOwner(
+          ADMIN_WALLET,
+          { mint: USDT_MINT }
+        );
 
+        if (!userAccounts.value[0]?.pubkey || !adminAccounts.value[0]?.pubkey) {
+          throw new Error('USDT token accounts not found');
+        }
+
+        const userTokenAccount = userAccounts.value[0].pubkey;
+        const adminTokenAccount = adminAccounts.value[0].pubkey;
+
+         baseAccounts = [
+            { pubkey: publicKey, isSigner: true, isWritable: true }, // investor_info
+            { pubkey: userTokenAccount, isSigner: false, isWritable: true }, // investor_token_account
+            { pubkey: adminTokenAccount, isSigner: false, isWritable: true }, // admin_token_account
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, // token_program
+        ];
+      }
+
+      // Add referral account if needed
       if (referralInput) {
         const seed = new TextEncoder().encode("referral");
         const [referralAccount] = PublicKey.findProgramAddressSync(
