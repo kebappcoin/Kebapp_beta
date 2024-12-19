@@ -28,7 +28,7 @@ const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA
 const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
-const MIN_INVESTMENT = 50;
+const MIN_INVESTMENT = 0.000001;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
