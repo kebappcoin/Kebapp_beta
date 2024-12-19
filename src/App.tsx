@@ -91,7 +91,7 @@ function CountdownTimer() {
           { value: timeLeft.seconds, label: 'SECONDS' }
         ].map(({ value, label }) => (
           <div key={label} className="relative">
-            <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4 border border-[#19C5E2]/20">
+            <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-[#19C5E2]/20">
               <div className="text-5xl sm:text-6xl font-bold mb-2" style={{
                 background: 'linear-gradient(267deg, #F4F914 1.61%, #19C5E2 98.09%)',
                 WebkitBackgroundClip: 'text',
@@ -208,8 +208,6 @@ function App() {
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new AlphaWalletAdapter(),
     ],
     [network]
   );

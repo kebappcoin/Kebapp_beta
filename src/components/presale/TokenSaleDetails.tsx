@@ -116,7 +116,7 @@ useEffect(() => {
         );
         setAdminUSDTBalance(adminUsdtBalance.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0);
         setTotalRaisedSol(adminSolBalance / LAMPORTS_PER_SOL);
-        setProgress((totalRaisedUsd / HARDCAP) * 100);
+        setProgress(((((adminSolBalance / LAMPORTS_PER_SOL) * solPrice)+(adminUsdtBalance.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0)) / HARDCAP) * 100);
       } catch (error) {
         console.error('Error fetching total raised:', error);
       }
