@@ -28,7 +28,7 @@ const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA
 const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
-const MIN_INVESTMENT = 0;
+const MIN_INVESTMENT = 50;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
@@ -77,6 +77,7 @@ export function TokenSaleDetails() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralInput, setReferralInput] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [adminUSDTBalance, setAdminUSDTBalance] = useState(0);
 
   const getConnection = useCallback(() => {
     return new Connection(
@@ -85,24 +86,43 @@ export function TokenSaleDetails() {
     );
   }, []);
 
-  // Fetch prices effect
+ // Keep the original price fetching effect
+useEffect(() => {
+  const fetchPrices = async () => {
+    try {
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      const data = await response.json();
+      setSolPrice(data.solana.usd);
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    }
+  };
+
+  fetchPrices();
+  const interval = setInterval(fetchPrices, 300000);
+  return () => clearInterval(interval);
+}, []);
+
+  // Add a new effect for total raised that runs independently
   useEffect(() => {
-    const fetchPrices = async () => {
+    const fetchTotalRaised = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-        const data = await response.json();
-        setSolPrice(data.solana.usd);
+        const connection = getConnection();
+        const adminSolBalance = await connection.getBalance(ADMIN_WALLET);
+        const totalRaisedUsd = (adminSolBalance / LAMPORTS_PER_SOL) * solPrice;
+        setTotalRaisedSol(adminSolBalance / LAMPORTS_PER_SOL);
+        setProgress((totalRaisedUsd / HARDCAP) * 100);
       } catch (error) {
-        console.error('Error fetching prices:', error);
+        console.error('Error fetching total raised:', error);
       }
     };
 
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 600000);
+    fetchTotalRaised();
+    const interval = setInterval(fetchTotalRaised, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [getConnection, solPrice]); // Include solPrice dependency
 
-  // Fetch balances effect
+  // Keep the existing wallet balance effect
   useEffect(() => {
     const fetchBalances = async () => {
       if (!publicKey) return;
@@ -115,15 +135,13 @@ export function TokenSaleDetails() {
           { mint: USDT_MINT }
         );
       
-        // Get USDT balance, defaulting to 0 if not found
         const usdtBalance = response.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0;
-
+        const adminUsdtBalance = await connection.getParsedTokenAccountsByOwner(
+          ADMIN_WALLET,
+          { mint: USDT_MINT }
+        );
+        setAdminUSDTBalance(adminUsdtBalance.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0);
         setBalances(prev => ({ ...prev, sol: solBalance / LAMPORTS_PER_SOL, usdt: usdtBalance }));
-
-        const adminSolBalance = await connection.getBalance(ADMIN_WALLET);
-        const totalRaisedUsd = (adminSolBalance / LAMPORTS_PER_SOL) * solPrice;
-        setTotalRaisedSol(adminSolBalance / LAMPORTS_PER_SOL);
-        setProgress((totalRaisedUsd / HARDCAP) * 100);
       } catch (error) {
         console.error('Error fetching balances:', error);
         addNotification('error', 'Failed to fetch wallet balances');
@@ -135,7 +153,7 @@ export function TokenSaleDetails() {
       const interval = setInterval(fetchBalances, 6000000);
       return () => clearInterval(interval);
     }
-  }, [publicKey, connected, getConnection, addNotification, solPrice]);
+  }, [publicKey, connected, getConnection, addNotification]);
 
   // Fetch referral code effect
   useEffect(() => {
@@ -384,7 +402,7 @@ export function TokenSaleDetails() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Total Raised</span>
                 <span className="text-white">
-                  ${(totalRaisedSol * solPrice).toLocaleString()} / ${HARDCAP.toLocaleString()}
+                  ${((totalRaisedSol * solPrice)+(adminUSDTBalance)).toLocaleString()} / ${HARDCAP.toLocaleString()}
                 </span>
               </div>
 
@@ -450,7 +468,7 @@ export function TokenSaleDetails() {
               <p className="text-red-500 text-sm mt-1">{error}</p>
             )}
 
-<button 
+            <button
               onClick={connected ? handleInvest : () => setShowWalletModal(true)}
               disabled={isPresaleEnded || isProcessing || connecting}
               className="w-full bg-gradient-brand text-black font-bold py-4 px-6 rounded-lg hover:shadow-gradient transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-none"
@@ -464,13 +482,19 @@ export function TokenSaleDetails() {
               <div>
                 <span className="text-gray-400 block">Min Investment</span>
                 <span className="text-white">
-                {selectedToken.currency} {MIN_INVESTMENT.toLocaleString()}
+                  {selectedToken.symbol === 'SOL'
+                    ? `$ ${(MIN_INVESTMENT*solPrice).toLocaleString()}`
+                    : `$ ${MIN_INVESTMENT}`
+                  }
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-gray-400 block">Max Investment</span>
                 <span className="text-white">
-                {selectedToken.currency} {MAX_INVESTMENT.toLocaleString()}
+                  {selectedToken.symbol === 'SOL'
+                    ? `$ ${(MAX_INVESTMENT*solPrice).toLocaleString()}`
+                    : `$ ${MAX_INVESTMENT}`
+                  }
                 </span>
               </div>
             </div>

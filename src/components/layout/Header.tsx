@@ -22,7 +22,6 @@ export function Header() {
               </div>
             </div>
             <span className="text-xl sm:text-2xl font-bold bg-gradient-brand bg-clip-text text-transparent">
-              KebappCoin
             </span>
           </div>
           

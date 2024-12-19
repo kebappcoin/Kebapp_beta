@@ -24,7 +24,6 @@ const tiers = [
   {
     range: 'First $1M',
     bonus: 10,
-    status: 'active',
     icon: Gift,
   },
   {
