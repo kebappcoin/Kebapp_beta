@@ -17,7 +17,6 @@ export function ConnectWalletButton({
     publicKey,
     disconnect,
     connected,
-    wallet,
     connecting,
     disconnecting,
     select,
@@ -26,42 +25,57 @@ export function ConnectWalletButton({
   const { addNotification } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [notified, setNotified] = useState(false); // State to prevent recursive notifications
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentAddress = publicKey?.toString() || null;
 
   const redirectToPhantom = () => {
-    const dappUrl = encodeURIComponent(window.location.origin); // Dynamically get your app's URL
+    const dappUrl = encodeURIComponent(window.location.origin);
     const deepLink = `phantom://app?link=${dappUrl}`;
-  
-    // Check if the device is mobile
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
+
     if (isMobile) {
-      if (/Android/i.test(navigator.userAgent)) {
-        // Redirect to Phantom Wallet on Google Play if not installed
-        window.location.href =
-          'https://play.google.com/store/apps/details?id=app.phantom';
-      } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // Redirect to Phantom Wallet on the App Store if not installed
-        window.location.href =
-          'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
-      } else {
-        // Attempt to open Phantom Wallet via deep link
+      let fallbackTimeout: any;
+
+      const openDeepLink = () => {
         window.location.href = deepLink;
-      }
-    } else {
-      alert(
-        'Phantom Wallet deep linking is only supported on mobile devices. Please use a mobile browser or the Phantom Wallet app.'
-      );
+
+        fallbackTimeout = setTimeout(() => {
+          if (/Android/i.test(navigator.userAgent)) {
+            window.location.href =
+              'https://play.google.com/store/apps/details?id=app.phantom';
+          } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            window.location.href =
+              'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+          }
+        }, 1500);
+      };
+
+      window.addEventListener('blur', () => clearTimeout(fallbackTimeout), {
+        once: true,
+      });
+
+      openDeepLink();
     }
   };
 
-  // Wallet account change listener
+  useEffect(() => {
+    if (connected && !notified) {
+      addNotification('success', 'Wallet successfully connected!');
+      setNotified(true);
+    }
+
+    if (!connected && notified) {
+      setNotified(false);
+    }
+  }, [connected, addNotification, notified]);
+
   useEffect(() => {
     const handleAccountChange = () => {
       disconnect().then(() => {
-        if (wallet) select(wallet.adapter.name);
+        if (select) select(wallet.adapter.name);
       });
     };
 
@@ -74,9 +88,8 @@ export function ConnectWalletButton({
         window.solana.removeListener('accountChanged', handleAccountChange);
       }
     };
-  }, [wallet, disconnect, select]);
+  }, [disconnect, select]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -115,14 +128,17 @@ export function ConnectWalletButton({
 
   const handleConnectWallet = () => {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
+
     if (isMobile) {
-      // On mobile, use deep linking
-      redirectToPhantom();
+      setShowConsentModal(true);
     } else {
-      // On desktop, show the wallet modal
       setShowWalletModal(true);
     }
+  };
+
+  const handleConsentAndRedirect = () => {
+    setShowConsentModal(false);
+    redirectToPhantom();
   };
 
   if (!connected || !currentAddress) {
@@ -142,6 +158,31 @@ export function ConnectWalletButton({
           onClose={() => setShowWalletModal(false)}
           onConnect={() => setShowWalletModal(false)}
         />
+
+        {showConsentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+              <h2 className="text-xl font-bold mb-4">Open Phantom Wallet</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Do you want to open the Phantom Wallet app to connect your wallet?
+              </p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setShowConsentModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConsentAndRedirect}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                >
+                  Open Wallet
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
