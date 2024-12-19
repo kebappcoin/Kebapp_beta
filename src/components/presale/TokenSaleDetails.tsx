@@ -49,6 +49,30 @@ const TOKENS = [
   }
 ];
 
+const redirectToPhantom = () => {
+  const dappUrl = encodeURIComponent(window.location.origin); // Dynamically get your app's URL
+  const deepLink = `phantom://app?link=${dappUrl}`;
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    if (/Android/i.test(navigator.userAgent)) {
+      // Redirect to Phantom Wallet on Google Play if not installed
+      window.location.href =
+        'https://play.google.com/store/apps/details?id=app.phantom';
+    } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      // Redirect to Phantom Wallet on the App Store if not installed
+      window.location.href =
+        'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+    } else {
+      // Attempt to open Phantom Wallet via deep link
+      window.location.href = deepLink;
+    }
+  } else {
+    alert('Phantom Wallet deep linking is only supported on mobile devices. Please use a mobile browser or the Phantom Wallet app.');
+  }
+};
+
 export function TokenSaleDetails() {
   const { 
     publicKey, 
@@ -78,6 +102,16 @@ export function TokenSaleDetails() {
   const [referralInput, setReferralInput] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [adminUSDTBalance, setAdminUSDTBalance] = useState(0);
+
+  const handleConnectWallet = () => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      redirectToPhantom();
+    } else {
+      setShowWalletModal(true);
+    }
+  };
 
   const getConnection = useCallback(() => {
     return new Connection(
@@ -209,6 +243,11 @@ useEffect(() => {
   const handleInvest = async () => {
     if (!publicKey || !signTransaction) {
       setShowWalletModal(true);
+      return;
+    }
+
+    if (!connected) {
+      handleConnectWallet();
       return;
     }
 
@@ -468,14 +507,17 @@ useEffect(() => {
               <p className="text-red-500 text-sm mt-1">{error}</p>
             )}
 
+            {/* Connect Wallet Button */}
             <button
-              onClick={connected ? handleInvest : () => setShowWalletModal(true)}
-              disabled={isPresaleEnded || isProcessing || connecting}
+              onClick={connected ? handleInvest : handleConnectWallet}
+              disabled={isPresaleEnded || connecting}
               className="w-full bg-gradient-brand text-black font-bold py-4 px-6 rounded-lg hover:shadow-gradient transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-none"
             >
-              {isProcessing ? 'Processing...' : 
-               connecting ? 'Connecting...' :
-               !connected ? 'Connect Wallet' : 'Invest Now'}
+              {connecting
+                ? 'Connecting...'
+                : !connected
+                ? 'Connect Wallet'
+                : 'Invest Now'}
             </button>
 
             <div className="flex justify-between text-sm">
