@@ -110,6 +110,11 @@ useEffect(() => {
         const connection = getConnection();
         const adminSolBalance = await connection.getBalance(ADMIN_WALLET);
         const totalRaisedUsd = (adminSolBalance / LAMPORTS_PER_SOL) * solPrice;
+        const adminUsdtBalance = await connection.getParsedTokenAccountsByOwner(
+          ADMIN_WALLET,
+          { mint: USDT_MINT }
+        );
+        setAdminUSDTBalance(adminUsdtBalance.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0);
         setTotalRaisedSol(adminSolBalance / LAMPORTS_PER_SOL);
         setProgress((totalRaisedUsd / HARDCAP) * 100);
       } catch (error) {
@@ -136,11 +141,6 @@ useEffect(() => {
         );
       
         const usdtBalance = response.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0;
-        const adminUsdtBalance = await connection.getParsedTokenAccountsByOwner(
-          ADMIN_WALLET,
-          { mint: USDT_MINT }
-        );
-        setAdminUSDTBalance(adminUsdtBalance.value[0]?.account.data.parsed.info.tokenAmount.uiAmount || 0);
         setBalances(prev => ({ ...prev, sol: solBalance / LAMPORTS_PER_SOL, usdt: usdtBalance }));
       } catch (error) {
         console.error('Error fetching balances:', error);
