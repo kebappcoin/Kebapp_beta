@@ -47,7 +47,7 @@ export default function TransactionDialog({ isOpen, onClose, signature, amount, 
               <p className="font-semibold text-gray-900">${amount}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-1">Kebab Coins Staked</p>
+              <p className="text-sm text-gray-600 mb-1">Kebab Coins Purchased</p>
               <p className="font-semibold text-gray-900">{kebabCoins} Coins</p>
             </div>
           </div>
