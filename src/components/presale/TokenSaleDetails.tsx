@@ -20,11 +20,8 @@ import { WalletModal } from '../wallet/WalletModal';
 const USDT_MINT = new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB');
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 
-// Constants
-//Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
-//Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
-const PROGRAM_ID = new PublicKey('EpsiipLfCuvaRiwXMrMsUid4kFkeLcERVrevc84qWWSv');
-const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
+const PROGRAM_ID = new PublicKey('J21bAjfqCQtrkYjKS8W6JAb8mFmjDPA7x7eEGoMswAvq');
+const ADMIN_WALLET = new PublicKey('GTqSn12ucdeEJCFQQwZ9ZwDPhyXMPb3aKyfymt29bHuK');
 const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
@@ -60,7 +57,7 @@ export function TokenSaleDetails() {
     wallet,
     signTransaction
   } = useWallet();
-  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const { addNotification } = useNotifications();
   const { isPresaleEnded, addDeposit } = usePresale();
 
@@ -455,7 +452,8 @@ useEffect(() => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Deposit Wallet Address</span>
+                  <span className="text-gray-400"><b>CHAIN: SOLANA</b></span>
+                  <span className="text-gray-400"><b>TOKEN: USDT/SOLANA</b></span>
                   <button
                     onClick={() => copyToClipboard(ADMIN_WALLET.toString(), 'Address copied!')}
                     className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-white/10"
@@ -468,7 +466,8 @@ useEffect(() => {
                   </button>
                 </div>
                 <p className="font-mono text-xs text-gray-400 break-all">
-                  {ADMIN_WALLET.toString()}
+                  <p>WALLET ADDRESS:</p>
+                  <p className="text-white text-md">{ADMIN_WALLET.toString()}</p>
                 </p>
               </div>
 
@@ -514,7 +513,7 @@ useEffect(() => {
             {error && (
               <p className="text-red-500 text-sm mt-1">{error}</p>
             )}
-
+          {!isMobile ? (
             <button
               onClick={connected ? handleInvest : () => setShowWalletModal(true)}
               disabled={isPresaleEnded || isProcessing || connecting}
@@ -524,6 +523,15 @@ useEffect(() => {
                connecting ? 'Connecting...' :
                !connected ? 'Connect Wallet' : 'Invest Now'}
             </button>
+          ):(
+            <div className="w-full bg-gradient-brand text-black font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+              <div className="flex justify-center items-center">
+                <div className="text-black text-sm">
+                  <p>Presale only on PC/Web/Laptops</p>
+                </div>
+              </div>
+            </div>
+          )}
 
             {showTransactionDialog && (
               <div className="fixed inset-0 flex items-center justify-center z-50" style={{ top: '-210px' }}>

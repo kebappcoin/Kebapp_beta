@@ -39,7 +39,7 @@ export function WalletModal({ isOpen, onClose, onConnect }: WalletModalProps) {
             key={wallet.adapter.name}
             onClick={() => handleWalletClick(wallet.adapter.name)}
             disabled={connecting}
-            className="w-full flex items-center justify-between p-4 rounded-xl bg-[#12131a] hover:bg-gradient-brand group transition-all duration-300 border border-brand-blue/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-brand w-full flex items-center justify-between p-4 rounded-xl bg-[#12131a] hover:bg-gradient-brand group transition-all duration-300 border border-brand-blue/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white p-2 flex items-center justify-center group-hover:bg-black/10">

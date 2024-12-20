@@ -17,7 +17,7 @@ import { useMemo } from 'react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import React from 'react';
 
-const PRESALE_START = new Date('2024-12-20T18:00:00Z'); // 19:00 CET
+const PRESALE_START = new Date('2024-12-20T19:00:00Z'); // 19:00 CET
 const PRESALE_END = new Date('2024-12-22T17:59:00Z');   // 18:59 CET
 
 const tiers = [

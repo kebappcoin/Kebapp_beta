@@ -11,8 +11,8 @@ import {
 //Dev: 5Mjx1npPL3wUorsJvjmui3s5Nj7XapPWseGgu2KSxknd
 //Prod: 6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H
 
-const PROGRAM_ID = new PublicKey('EpsiipLfCuvaRiwXMrMsUid4kFkeLcERVrevc84qWWSv');
-const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
+const PROGRAM_ID = new PublicKey('J21bAjfqCQtrkYjKS8W6JAb8mFmjDPA7x7eEGoMswAvq');
+const ADMIN_WALLET = new PublicKey('GTqSn12ucdeEJCFQQwZ9ZwDPhyXMPb3aKyfymt29bHuK');
 const KEBAB_TOKEN_MINT = new PublicKey('5fEEqD2GxnJ64cMoZGxKTd9ypiU2oc8CTSRyRxFRhNZP');
 
 // dev

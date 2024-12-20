@@ -29,9 +29,11 @@ export function ConnectWalletButton({
   const [notified, setNotified] = useState(false); // State to prevent recursive notifications
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [walletConnected, setWalletConnected] = useState(connected);
+  const [mobile, setMobile] = useState(false);
 
   const currentAddress = publicKey?.toString() || null;
-  const isMobile:boolean = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 
   const redirectToPhantom = () => {
     const dappUrl = encodeURIComponent(window.location.origin);
@@ -63,14 +65,17 @@ export function ConnectWalletButton({
   };
 
   const revalidateWalletConnection = async () => {
-    if (isMobile && window.solana) {
-      try {
-        const response = await window.solana.connect({ onlyIfTrusted: true });
-        if (response.publicKey) {
-          setWalletConnected(true); // Update local state
+    if(isMobile) {
+      setMobile(true);
+      if (window.solana) {
+        try {
+          const response = await window.solana.connect({ onlyIfTrusted: true });
+          if (response.publicKey) {
+            setWalletConnected(true); // Update local state
+          }
+        } catch (err) {
+          console.error('Revalidation failed:', err);
         }
-      } catch (err) {
-        console.error('Revalidation failed:', err);
       }
     }
   };
@@ -179,6 +184,7 @@ export function ConnectWalletButton({
   if (!connected || !currentAddress) {
     return (
       <>
+        {!isMobile ? (
         <button
           onClick={handleConnectWallet}
           disabled={connecting || disconnecting}
@@ -187,8 +193,16 @@ export function ConnectWalletButton({
           <Wallet className="w-5 h-5" />
           {connecting ? 'Connecting...' : 'Connect Wallet'}
         </button>
-
-        <WalletModal
+       ):(
+        <div className="w-full bg-gradient-brand text-black font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+          <div className="flex justify-center items-center">
+            <div className="text-black text-sm">
+              <p>Presale only on PC/Web/Laptops</p>
+            </div>
+          </div>
+        </div>
+      )}
+      <WalletModal
           isOpen={showWalletModal}
           onClose={() => setShowWalletModal(false)}
           onConnect={() => setShowWalletModal(false)}
