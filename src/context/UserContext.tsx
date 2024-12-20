@@ -26,7 +26,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   // Fix: Initialize the modal state
   const [isWalletModalOpen, setWalletModalOpen] = useState(false);
-
+//`https://mainnet.helius-rpc.com/?api-key=a1d5b3f4-f7c0-499a-b729-6f7ef05cacaa`,
   const getConnection = () => {
     return new Connection(
       `https://mainnet.helius-rpc.com/?api-key=a1d5b3f4-f7c0-499a-b729-6f7ef05cacaa`,

@@ -8,23 +8,29 @@ import {
   Connection,
   SendTransactionError,
 } from '@solana/web3.js';
+//Dev: 5Mjx1npPL3wUorsJvjmui3s5Nj7XapPWseGgu2KSxknd
+//Prod: 6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H
 
-//Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
-//Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
-
-const PROGRAM_ID = new PublicKey('6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H');
+const PROGRAM_ID = new PublicKey('EpsiipLfCuvaRiwXMrMsUid4kFkeLcERVrevc84qWWSv');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 const KEBAB_TOKEN_MINT = new PublicKey('5fEEqD2GxnJ64cMoZGxKTd9ypiU2oc8CTSRyRxFRhNZP');
+
+// dev
+//const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'); // SPL Token Program ID
+
+//prod
+
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-const NETWORK = 'devnet';
+
 const COMMITMENT = 'processed';
+const NETWORK = 'devnet';
 
 export const TgeTrigger = () => {
   const { publicKey, signTransaction } = useWallet();
   const { addNotification } = useNotifications();
   const [isProcessing, setIsProcessing] = useState(false);
   const [referralAccounts, setReferralAccounts] = useState<{ pubkey: PublicKey, owner: PublicKey }[]>([]);
-
+// `https://api.${NETWORK}.solana.com`,
   const getConnection = () => {
     return new Connection(
       `https://mainnet.helius-rpc.com/?api-key=a1d5b3f4-f7c0-499a-b729-6f7ef05cacaa`,

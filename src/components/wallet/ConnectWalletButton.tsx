@@ -28,13 +28,14 @@ export function ConnectWalletButton({
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [notified, setNotified] = useState(false); // State to prevent recursive notifications
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [walletConnected, setWalletConnected] = useState(connected);
 
   const currentAddress = publicKey?.toString() || null;
+  const isMobile:boolean = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const redirectToPhantom = () => {
     const dappUrl = encodeURIComponent(window.location.origin);
     const deepLink = `phantom://app?link=${dappUrl}`;
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
       let fallbackTimeout: any;
@@ -60,6 +61,40 @@ export function ConnectWalletButton({
       openDeepLink();
     }
   };
+
+  const revalidateWalletConnection = async () => {
+    if (isMobile && window.solana) {
+      try {
+        const response = await window.solana.connect({ onlyIfTrusted: true });
+        if (response.publicKey) {
+          setWalletConnected(true); // Update local state
+        }
+      } catch (err) {
+        console.error('Revalidation failed:', err);
+      }
+    }
+  };
+
+  // Listen for page focus and visibility changes to revalidate wallet
+  useEffect(() => {
+    window.addEventListener('focus', revalidateWalletConnection);
+    document.addEventListener('visibilitychange', revalidateWalletConnection);
+
+    return () => {
+      window.removeEventListener('focus', revalidateWalletConnection);
+      document.removeEventListener('visibilitychange', revalidateWalletConnection);
+    };
+  }, []);
+
+  useEffect(() => {
+    setWalletConnected(connected);
+  }, [connected]);
+
+
+  useEffect(() => {
+    // Update local state when connected changes
+    setWalletConnected(connected);
+  }, [connected]);
 
   useEffect(() => {
     if (connected && !notified) {

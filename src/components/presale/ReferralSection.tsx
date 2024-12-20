@@ -11,7 +11,7 @@ export function ReferralSection() {
 
   const referralLink = referralCode 
     ? `https://kebappcoin.io/ref/${referralCode}`
-    : 'Connect wallet to get your referral link';
+    : 'Connect wallet to get your referral code';
 
   const handleCopy = () => {
     if (!referralCode) {
@@ -20,7 +20,7 @@ export function ReferralSection() {
     }
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
-    addNotification('success', 'Referral link copied to clipboard!');
+    addNotification('success', 'Referral code copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
   
@@ -43,7 +43,7 @@ export function ReferralSection() {
             </div>
             <div className="p-6 bg-[#12131a] rounded-lg border border-brand-blue/20 hover:border-brand-blue/40 transition-all duration-300 hover:transform hover:scale-[1.02] group">
               <p className="text-gray-300 leading-relaxed">
-                Get <span className="text-white font-bold">2% rewards</span> in Kebapp tokens for every successful purchase made using your referral link. The more friends you invite, the more tokens you earn!
+                Get <span className="text-white font-bold">2% rewards</span> in Kebapp tokens for every successful purchase made using your referral code. The more friends you invite, the more tokens you earn!
               </p>
             </div>
           </div>
@@ -54,7 +54,7 @@ export function ReferralSection() {
         <div className="bg-gradient-brand p-8 rounded-xl text-black text-center hover:shadow-gradient transition-all duration-300">
           <h3 className="text-2xl font-bold mb-4">Start Earning Today</h3>
           <p className="mb-6 opacity-80">
-            Share your referral link and earn 2% Kebapp token rewards and 1% as bonus if referal link is used for every successful purchase
+            Share your referral code and earn 2% Kebapp token rewards and 1% as bonus if referal code is used for every successful purchase
           </p>
           {!walletAddress ? (
             <button 
@@ -75,7 +75,7 @@ export function ReferralSection() {
                   <span>Copied!</span>
                 </>
               ) : (
-                'Copy Referral Link'
+                'Copy Referral Code'
               )}
             </button>
           )}

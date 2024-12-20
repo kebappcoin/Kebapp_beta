@@ -28,7 +28,7 @@ export default function ReferralSystem() {
           <div className="bg-purple-50 p-6 rounded-xl">
             <div className="flex items-center gap-2 mb-4">
               <Link className="w-6 h-6 text-purple-600" />
-              <h3 className="text-xl font-semibold">Your Referral Link</h3>
+              <h3 className="text-xl font-semibold">Your Referral Code</h3>
             </div>
             <div className="bg-white p-3 rounded-lg flex items-center gap-2">
               <input
@@ -47,7 +47,7 @@ export default function ReferralSystem() {
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-8 rounded-xl text-white text-center">
           <Users className="w-12 h-12 mx-auto mb-4" />
           <h3 className="text-2xl font-bold mb-2">Start Earning Now</h3>
-          <p className="mb-6">Share your referral link and earn rewards for every successful investment</p>
+          <p className="mb-6">Share your referral code and earn rewards for every successful investment</p>
           <button className="bg-white text-purple-600 font-bold py-3 px-6 rounded-lg hover:bg-purple-50 transition-colors">
             Get Started
           </button>

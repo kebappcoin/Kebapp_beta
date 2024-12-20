@@ -23,12 +23,12 @@ const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ
 // Constants
 //Dev: FgkLDmnXJaPwRAjudDiC9AzSCaMUumdjv3RW2zkWKLXH
 //Prod: E1SA8MMtdEDSoriuBi1BJhnbwc3jCnSPmH2to6cyBzSn
-const PROGRAM_ID = new PublicKey('6dCobFnsRDbeER46eRFG6a7wy7NN9iNDLrJzEcUHhm3H');
+const PROGRAM_ID = new PublicKey('EpsiipLfCuvaRiwXMrMsUid4kFkeLcERVrevc84qWWSv');
 const ADMIN_WALLET = new PublicKey('2FcJbN2kgx3eB1JeJgoBKczpAsXxJzosq269CoidxfhA');
 const NETWORK = 'devnet';
 const COMMITMENT = 'processed';
 
-const MIN_INVESTMENT = 0;
+const MIN_INVESTMENT = 50;
 const MAX_INVESTMENT = 5000;
 const HARDCAP = 2250000;
 
@@ -45,45 +45,11 @@ const TOKENS = [
     icon: "./images/sol.png",
     decimals: LAMPORTS_PER_SOL,
     instructionIndex: 0,
-    currency : 'SOL'
+    currency : 'SOL',
+    MIN_INVESTMENT: 0.27,
+    MAX_INVESTMENT: 27,
   }
 ];
-
-const redirectToPhantom = () => {
-  const dappUrl = encodeURIComponent(window.location.origin); // Dynamically get your DApp's URL
-  const deepLink = `phantom://app?link=${dappUrl}`;
-
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    let fallbackTimeout: any;
-
-    // Attempt to open Phantom Wallet via deep link
-    const openDeepLink = () => {
-      window.location.href = deepLink;
-
-      // If the app doesn't respond, redirect to the appropriate app store
-      fallbackTimeout = setTimeout(() => {
-        if (/Android/i.test(navigator.userAgent)) {
-          // Redirect to Google Play
-          window.location.href =
-            'https://play.google.com/store/apps/details?id=app.phantom';
-        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          // Redirect to App Store
-          window.location.href =
-            'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
-        }
-      }, 1500); // Timeout for detecting failure (adjust as needed)
-    };
-
-    // Clean up timeout if the user successfully opens the app
-    window.addEventListener('blur', () => clearTimeout(fallbackTimeout), {
-      once: true,
-    });
-
-    openDeepLink();
-  }
-}
 
 export function TokenSaleDetails() {
   const { 
@@ -114,16 +80,13 @@ export function TokenSaleDetails() {
   const [referralInput, setReferralInput] = useState('');
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [adminUSDTBalance, setAdminUSDTBalance] = useState(0);
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [currentTransactionDetails, setCurrentTransactionDetails] = useState({
+    signature: '',
+    amount: 0,
+    kebabCoins: 0.0,
+  });
 
-  const handleConnectWallet = () => {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      redirectToPhantom();
-    } else {
-      setShowWalletModal(true);
-    }
-  };
 
   const getConnection = useCallback(() => {
     return new Connection(
@@ -155,7 +118,6 @@ useEffect(() => {
       try {
         const connection = getConnection();
         const adminSolBalance = await connection.getBalance(ADMIN_WALLET);
-        const totalRaisedUsd = (adminSolBalance / LAMPORTS_PER_SOL) * solPrice;
         const adminUsdtBalance = await connection.getParsedTokenAccountsByOwner(
           ADMIN_WALLET,
           { mint: USDT_MINT }
@@ -232,13 +194,21 @@ useEffect(() => {
       return false;
     }
 
-    if (numAmount < MIN_INVESTMENT) {
-      setError(`Minimum investment is ${MIN_INVESTMENT} ${selectedToken.symbol}`);
+    if ((selectedToken.symbol === "SOL") ? numAmount < 0.27 : numAmount < MIN_INVESTMENT) {
+      if((selectedToken.symbol === "SOL")) {
+        setError(`Minimum investment is SOL 0.27 ${selectedToken.symbol}`);
+      } else {
+        setError(`Minimum investment is ${MIN_INVESTMENT} ${selectedToken.symbol}`);
+      }
       return false;
     }
 
-    if (numAmount > MAX_INVESTMENT) {
-      setError(`Maximum investment is ${MAX_INVESTMENT} ${selectedToken.symbol}`);
+    if ((selectedToken.symbol === "SOL") ? numAmount > 27 : numAmount > MAX_INVESTMENT) {
+      if((selectedToken.symbol === "SOL")) {
+        setError(`Maximum investment is SOL 27 ${selectedToken.symbol}`);
+      } else {
+        setError(`Maximum investment is ${MAX_INVESTMENT} ${selectedToken.symbol}`);
+      }
       return false;
     }
 
@@ -258,12 +228,7 @@ useEffect(() => {
       return;
     }
 
-    if (!connected) {
-      handleConnectWallet();
-      return;
-    }
-
-    if (!validateAmount(amount)) {
+    if(!validateAmount(amount)) {
       addNotification('error', error);
       return;
     }
@@ -334,12 +299,27 @@ useEffect(() => {
           [seed, publicKey.toBytes()],
           PROGRAM_ID
         );
-        baseAccounts.splice(2, 0, { 
-          pubkey: referralAccount, 
-          isSigner: false, 
-          isWritable: true 
-        });
+
+        console.log('Referral account:', referralAccount.toString());
+
+        // Adjust position based on program requirements
+        if (selectedToken.symbol === 'SOL') {
+          baseAccounts.splice(2, 0, {
+            pubkey: referralAccount,
+            isSigner: false,
+            isWritable: true,
+          });
+        } else if (selectedToken.symbol === 'USDT') {
+          // Adjust index or placement for USDT
+          baseAccounts.push({
+            pubkey: referralAccount,
+            isSigner: false,
+            isWritable: true,
+          });
+        }
       }
+
+      console.log('Final baseAccounts:', baseAccounts.map(acc => acc.pubkey.toString()));
 
       const instruction = new TransactionInstruction({
         keys: baseAccounts,
@@ -356,6 +336,22 @@ useEffect(() => {
         blockhash,
         lastValidBlockHeight
       });
+
+      if (selectedToken.symbol === 'SOL') {
+        setCurrentTransactionDetails({
+          signature,
+          amount: Number(amount),
+          kebabCoins: ((solPrice * Number(amount))/0.02).toFixed(2)
+        });
+      } else {
+        setCurrentTransactionDetails({
+          signature,
+          amount: Number(amount),
+          kebabCoins: (Number(amount) / 0.02).toFixed(2)
+        });
+      }
+
+      setShowTransactionDialog(true);
 
       addNotification('success', 'Investment successful!');
       addDeposit(Number(amount));
@@ -519,30 +515,58 @@ useEffect(() => {
               <p className="text-red-500 text-sm mt-1">{error}</p>
             )}
 
-            <div>
-                  {/* Connect Wallet / Invest Now Button */}
-                  <button
-                    onClick={connected ? handleInvest : handleConnectWallet}
-                    disabled={connecting}
-                    className="w-full bg-gradient-brand text-black font-bold py-4 px-6 rounded-lg hover:shadow-gradient transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-none"
-                    >
-                    {connecting ? 'Connecting...' : connected ? 'Invest Now' : 'Connect Wallet'}
-                  </button>
+            <button
+              onClick={connected ? handleInvest : () => setShowWalletModal(true)}
+              disabled={isPresaleEnded || isProcessing || connecting}
+              className="w-full bg-gradient-brand text-black font-bold py-4 px-6 rounded-lg hover:shadow-gradient transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-none"
+            >
+              {isProcessing ? 'Processing...' : 
+               connecting ? 'Connecting...' :
+               !connected ? 'Connect Wallet' : 'Invest Now'}
+            </button>
 
-                  {/* Wallet Modal */}
-                  <WalletModal
-                    isOpen={showWalletModal}
-                    onClose={() => setShowWalletModal(false)}
-                    onConnect={() => setShowWalletModal(false)}
-                  />
-            </div>
+            {showTransactionDialog && (
+              <div className="fixed inset-0 flex items-center justify-center z-50" style={{ top: '-210px' }}>
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+              
+              <div className="relative bg-[#12131a]/95 rounded-lg p-6 w-96 text-center">
+                <h2 className="text-2xl font-bold mb-4 bg-gradient-brand bg-clip-text text-transparent">
+                  Transaction Successful
+                </h2>
+                
+              
+                
+                <p className="mb-2 text-gray-400">
+                  <span className="text-gray-300">Amount Invested:</span>{' '}
+                  <span className="text-white">
+                  {selectedToken.symbol === 'SOL' ? `SOL ${currentTransactionDetails.amount}` :
+                    `$ ${currentTransactionDetails.amount}`
+                   }
+                   </span>
+                </p>
+                
+                <p className="mb-4 text-gray-400">
+                  <span className="text-gray-300">Kebab Coins Purchased:</span>{' '}
+                  <span className="text-white">{currentTransactionDetails.kebabCoins} Coins</span>
+                </p>
+                
+                <button
+                  onClick={() => setShowTransactionDialog(false)}
+                  className="w-full bg-gradient-brand text-black font-bold py-2 rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Close
+                </button>
+              </div>
+              </div>
+
+            )}
 
             <div className="flex justify-between text-sm">
               <div>
                 <span className="text-gray-400 block">Min Investment</span>
                 <span className="text-white">
                   {selectedToken.symbol === 'SOL'
-                    ? `$ ${(MIN_INVESTMENT*solPrice).toLocaleString()}`
+                    ? `SOL ${(0.27).toLocaleString()}`
                     : `$ ${MIN_INVESTMENT}`
                   }
                 </span>
@@ -551,7 +575,7 @@ useEffect(() => {
                 <span className="text-gray-400 block">Max Investment</span>
                 <span className="text-white">
                   {selectedToken.symbol === 'SOL'
-                    ? `$ ${(MAX_INVESTMENT*solPrice).toLocaleString()}`
+                    ? `SOL ${(27).toLocaleString()}`
                     : `$ ${MAX_INVESTMENT}`
                   }
                 </span>
